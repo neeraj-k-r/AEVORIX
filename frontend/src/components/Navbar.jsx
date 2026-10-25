@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { Shield, Circle, Users, LayoutDashboard, LogOut } from 'lucide-react';
+import { Shield, Circle, Users, LayoutDashboard, LogOut, CreditCard } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 export default function Navbar() {
@@ -8,6 +8,7 @@ export default function Navbar() {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/patients', label: 'Patients', icon: Users },
+    { path: '/nfc-management', label: 'NFC Cards', icon: CreditCard },
   ];
 
   return (

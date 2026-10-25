@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import PatientsPage from './pages/PatientsPage';
 import PatientDetailPage from './pages/PatientDetailPage';
 import { DashboardPatientPage } from './pages/dashboard/index';
+import { NFCManagementPage } from './pages/nfc';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -61,6 +62,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin']}>
             <DashboardPatientPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nfc-management"
+        element={
+          <ProtectedRoute allowedRoles={['Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin']}>
+            <NFCManagementPage />
           </ProtectedRoute>
         }
       />
