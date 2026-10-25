@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { roles, roleIcons, rolePlaceholders } from '../auth/roles';
+import { Eye, EyeOff } from 'lucide-react';
+import { roles, roleIcons, rolePlaceholders } from '../auth';
 import { useToast } from '../components/Toast';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 
 export default function LoginPage({ onLogin }) {
   const { error: showError } = useToast();
@@ -73,22 +75,17 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={rolePlaceholders[selectedRole]}
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                required
-                autoComplete="email"
-                disabled={isLoading}
-              />
-            </div>
+            <Input
+              id="email"
+              label="Email Address"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={rolePlaceholders[selectedRole]}
+              required
+              autoComplete="email"
+              disabled={isLoading}
+            />
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -136,20 +133,14 @@ export default function LoginPage({ onLogin }) {
               </a>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              fullWidth
+              loading={isLoading}
+              leftIcon={isLoading ? null : undefined}
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </button>
+              Sign In
+            </Button>
           </form>
         </div>
       </div>
