@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function AppRoutes() {
@@ -24,6 +25,7 @@ function AppRoutes() {
           isAuthenticated ? <Navigate to="/" replace /> : <LoginPage onLogin={login} />
         }
       />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route
         path="/"
         element={
