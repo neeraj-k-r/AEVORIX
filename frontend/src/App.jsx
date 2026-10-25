@@ -4,7 +4,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
 
   if (isLoading) {
     return (
@@ -15,7 +15,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage onLogin={login} />;
   }
 
   return (
@@ -24,10 +24,6 @@ function AppContent() {
       <Dashboard />
     </div>
   );
-}
-
-function handleLogin() {
-  // AuthContext handles the login, this is just a callback
 }
 
 export default function App() {
