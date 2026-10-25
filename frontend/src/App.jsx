@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import PatientsPage from './pages/PatientsPage';
 import PatientDetailPage from './pages/PatientDetailPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -35,6 +36,14 @@ function AppRoutes() {
               <Navbar />
               <Dashboard />
             </div>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute allowedRoles={['Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin']}>
+            <PatientsPage />
           </ProtectedRoute>
         }
       />
