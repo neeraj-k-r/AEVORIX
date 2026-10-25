@@ -1,5 +1,5 @@
 import { CheckCircle, Hash, ExternalLink } from 'lucide-react';
-import { Badge } from '../components';
+import { Badge } from '../../components';
 
 export function RecordRow({ label, subtext, value, verified = true, onVerify, icon }) {
   return (

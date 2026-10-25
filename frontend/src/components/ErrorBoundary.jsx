@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from './Button';
+import { Button } from '../components';
 
 export class ErrorBoundary extends Component {
   constructor(props) {

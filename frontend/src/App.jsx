@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import PatientsPage from './pages/PatientsPage';
 import PatientDetailPage from './pages/PatientDetailPage';
-import { DashboardPatientPage } from './pages/dashboard';
+import { DashboardPatientPage } from './pages/dashboard/index';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 

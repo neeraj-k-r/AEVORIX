@@ -1,4 +1,4 @@
-import { Shield, BloodDroplet, AlertTriangle, Circle } from 'lucide-react';
+import { Shield, Droplet, AlertTriangle, Circle } from 'lucide-react';
 
 export default function PatientCard({ patient, onClick }) {
   const { patient_code, full_name, blood_group, allergies, nfc_status, nfc_uid } = patient;
@@ -26,7 +26,7 @@ export default function PatientCard({ patient, onClick }) {
 
       <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
         <div className="flex items-center gap-2">
-          <BloodDroplet className="w-4 h-4 text-slate-400" />
+          <Droplet className="w-4 h-4 text-slate-400" />
           <div>
             <p className="text-slate-500">Blood Group</p>
             <p className="font-medium">{blood_group || 'N/A'}</p>

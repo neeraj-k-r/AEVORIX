@@ -75,7 +75,7 @@ export function Table({ columns, data, keyField = 'id', onRowClick, sortBy, sort
             </tr>
           ))}
         </tbody>
-      </div>
+      </table>
     </div>
   );
 }

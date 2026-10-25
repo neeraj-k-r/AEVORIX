@@ -3,7 +3,7 @@ import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
-const toastStyles = {
+const toastVariants = {
   success: 'bg-green-50 border-green-200 text-green-800',
   error: 'bg-red-50 border-red-200 text-red-800',
   warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
@@ -56,7 +56,7 @@ export function ToastProvider({ children }) {
 
 function ToastItem({ toast, onClose }) {
   const Icon = icons[toast.type];
-  const classes = toastStyles[toast.type];
+  const classes = toastVariants[toast.type];
 
   return (
     <div className={`flex items-start gap-3 p-4 rounded-lg border shadow-lg animate-slide-in ${classes}`}>
@@ -81,8 +81,7 @@ export function useToast() {
   return context;
 }
 
-// Add slide-in animation to globals
-export const toastStyles = `
+export const toastAnimationStyles = `
   @keyframes slide-in {
     from {
       opacity: 0;

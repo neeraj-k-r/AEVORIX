@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, Calendar, Pill, FlaskConical, Stethoscope } from 'lucide-react';
-import { Modal, Button, Input, Badge } from '../components';
-import { useToast } from '../components/Toast';
+import { Modal, Button, Input, Badge } from '../../components';
+import { useToast } from '../../components/Toast';
 import { useDiagnosesApi, usePrescriptionsApi, useLabResultsApi } from '../../hooks';
 
 const typeConfig = {

@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usePatientsApi, useBlockchainApi } from '../hooks/useApi';
-import { PatientCard } from '../components/PatientCard';
-import { RecordList } from '../components/RecordCard';
-import { PageLoader } from '../components/LoadingSpinner';
-import { useToast } from '../components/Toast';
-import BlockchainVerificationModal from '../components/BlockchainVerificationModal';
+import { usePatientsApi, useBlockchainApi } from '../hooks';
+import { PatientCard, RecordList, PageLoader, useToast, BlockchainVerificationModal } from '../components';
 
 export default function PatientDetailPage() {
   const { patientCode } = useParams();

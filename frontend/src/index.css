@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @keyframes slide-in {
   from {
@@ -15,6 +13,18 @@
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+@theme {
+  --color-background: #F8FAFC;
+  --color-card-surface: #FFFFFF;
+  --color-card-border: #E2E8F0;
+  --color-primary: #1E8885;
+  --color-primary-hover: #176B69;
+  --color-verification-bg: #E6F4EA;
+  --color-verification-text: #137333;
+  --color-alert-bg: #FCE8E6;
+  --color-alert-text: #C5221F;
 }
 
 :root {

@@ -1,14 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Plus, History, Pill, Activity, AlertTriangle, Clock } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePatientsApi, useAccessLogsApi } from '../../hooks/useApi';
-import { useAuth } from '../../contexts/AuthContext';
-import { PageLoader } from '../../components/LoadingSpinner';
-import { useToast } from '../../components/Toast';
-import { PatientSidebar } from './PatientSidebar';
-import { RecordCard } from './RecordCard';
-import { AddRecordModal } from './AddRecordModal';
-import { dashboardMenuItems } from '../pages/dashboard/menuItems';
+import { usePatientsApi, useAccessLogsApi } from '../../hooks';
+import { useAuth } from '../../contexts';
+import { PageLoader, useToast, PatientSidebar, RecordCard, AddRecordModal } from '../../components';
+import { dashboardMenuItems } from './menuItems';
 
 const sectionConfig = {
   diagnoses: {

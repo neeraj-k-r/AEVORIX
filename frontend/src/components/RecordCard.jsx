@@ -119,20 +119,24 @@ export function RecordCard({ record, type, onVerify }) {
 
 export function RecordList({ records, type, onVerify, title }) {
   if (!records?.length) {
+    const EmptyIcon = recordIcons[type] || Calendar;
     return (
       <div className="text-center py-8 text-slate-500">
         <div className="w-12 h-12 mx-auto mb-3 text-slate-300">
-          <recordIcons[type] className="w-full h-full" />
+          <EmptyIcon className="w-full h-full" />
         </div>
         <p>No {title?.toLowerCase() || 'records'} found</p>
       </div>
     );
   }
 
+  const HeaderIcon = recordIcons[type] || Calendar;
+  const headerIconColor = recordColors[type]?.replace('bg-', 'text-').replace('100', '600') || 'text-slate-600';
+
   return (
     <div className="space-y-4">
       <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-        <recordIcons[type] className={`w-5 h-5 ${recordColors[type].replace('bg-', 'text-').replace('100', '600')}`} />
+        <HeaderIcon className={`w-5 h-5 ${headerIconColor}`} />
         {title || type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} ({records.length})
       </h3>
       {records.map((record) => (

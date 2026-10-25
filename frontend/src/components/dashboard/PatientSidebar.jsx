@@ -1,6 +1,6 @@
-import { BloodDroplet, AlertTriangle, Shield, History, Pill, Activity, Clock } from 'lucide-react';
-import { dashboardMenuItems } from '../pages/dashboard/menuItems';
-import { Badge } from '../components';
+import { Droplet, AlertTriangle, Shield, History, Pill, Activity, Clock } from 'lucide-react';
+import { dashboardMenuItems } from '../../pages/dashboard/menuItems';
+import { Badge } from '../../components';
 
 const menuIcons = {
   History,
@@ -25,7 +25,7 @@ export default function PatientSidebar({ patient, activeSection, onSectionChange
         <div className="space-y-4 mb-5 p-4 bg-slate-50 rounded-lg border border-card-border">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 rounded-lg">
-              <BloodDroplet className="w-5 h-5 text-red-600" />
+              <Droplet className="w-5 h-5 text-red-600" />
             </div>
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide">Blood Group</p>

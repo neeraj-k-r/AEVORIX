@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { roles, roleIcons, rolePlaceholders } from '../auth';
-import { useToast } from '../components/Toast';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
+import { useToast } from '../components';
+import { Button, Input } from '../components';
 
 export default function LoginPage({ onLogin }) {
   const { error: showError } = useToast();
