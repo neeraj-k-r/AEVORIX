@@ -119,7 +119,9 @@ export function useAccessLogsApi() {
 
 export function useAiApi() {
   const { post } = useApi();
+  const { isAuthenticated } = useAuth();
 
+  // Backend API calls
   const explainRecord = useCallback(async (data) => {
     return post('/ai/explain', data);
   }, [post]);
@@ -128,5 +130,65 @@ export function useAiApi() {
     return post('/ai/query', data);
   }, [post]);
 
-  return { explainRecord, queryMedical };
+  // AI Service (Python FastAPI) calls
+  const aiBaseUrl = import.meta.env.VITE_AI_URL || 'http://localhost:8000';
+  
+  const aiQuery = useCallback(async (patientCode: string, query: string) => {
+    if (!isAuthenticated) throw new Error('Not authenticated');
+    const token = localStorage.getItem('aevorix_token');
+    const response = await fetch(`${aiBaseUrl}/api/ai/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ patient_code: patientCode, query, use_llm: true }),
+    });
+    if (!response.ok) throw new Error('AI query failed');
+    return response.json();
+  }, [isAuthenticated]);
+
+  const aiQuickPrompts = useCallback(async (patientCode: string) => {
+    if (!isAuthenticated) throw new Error('Not authenticated');
+    const token = localStorage.getItem('aevorix_token');
+    const response = await fetch(`${aiBaseUrl}/api/ai/quick-prompts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ patient_code: patientCode }),
+    });
+    if (!response.ok) throw new Error('Failed to get quick prompts');
+    return response.json();
+  }, [isAuthenticated]);
+
+  const aiRiskAnalysis = useCallback(async (patientCode: string) => {
+    if (!isAuthenticated) throw new Error('Not authenticated');
+    const token = localStorage.getItem('aevorix_token');
+    const response = await fetch(`${aiBaseUrl}/api/ai/xai-risk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ patient_code: patientCode }),
+    });
+    if (!response.ok) throw new Error('Risk analysis failed');
+    return response.json();
+  }, [isAuthenticated]);
+
+  const aiRiskContributions = useCallback(async (patientCode: string) => {
+    if (!isAuthenticated) throw new Error('Not authenticated');
+    const token = localStorage.getItem('aevorix_token');
+    const response = await fetch(`${aiBaseUrl}/api/ai/xai-risk/${patientCode}/contributions`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to get risk contributions');
+    return response.json();
+  }, [isAuthenticated]);
+
+  return { explainRecord, queryMedical, aiQuery, aiQuickPrompts, aiRiskAnalysis, aiRiskContributions };
 }

@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, History, Pill, Activity, AlertTriangle, Clock, Shield } from 'lucide-react';
+import { Plus, History, Pill, Activity, AlertTriangle, Clock, Shield, Bot } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePatientsApi, useAccessLogsApi, useBlockchainApi } from '../../hooks';
 import { useAuth } from '../../contexts';
 import { PageLoader, useToast, PatientSidebar, RecordCard, AddRecordModal } from '../../components';
 import { dashboardMenuItems } from './menuItems';
-import TamperDemoModal from '../../components/dashboard/TamperDemoModal';
+import { TamperDemoModal, AIWidget } from '../../components/dashboard';
 
 const sectionConfig = {
   diagnoses: {
@@ -155,55 +155,65 @@ export default function DashboardPatientPage() {
           />
 
           <div className="flex-1 min-w-0">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <RecordCard
-                title={config?.title || 'Records'}
-                icon={config?.icon}
-                records={sectionRecords}
-                onVerify={handleVerify}
-                emptyMessage={config?.emptyMessage}
-                action={canAddRecord && (
-                  <Button variant="ghost" size="sm" onClick={handleAddRecord} leftIcon={<Plus className="w-4 h-4" />}>
-                    Add Record
-                  </Button>
-                )}
-              />
-              {activeSection === 'diagnoses' && (
-                <RecordCard
-                  title="Active Prescriptions & Dosage"
-                  icon={Pill}
-                  records={records.prescriptions}
-                  onVerify={handleVerify}
-                  emptyMessage="No active prescriptions"
-                />
-              )}
-              {activeSection === 'prescriptions' && (
-                <RecordCard
-                  title="Recent Diagnoses"
-                  icon={History}
-                  records={records.diagnoses}
-                  onVerify={handleVerify}
-                  emptyMessage="No diagnoses recorded"
-                />
-              )}
-              {activeSection === 'lab-results' && (
-                <RecordCard
-                  title="Recent Diagnoses"
-                  icon={History}
-                  records={records.diagnoses}
-                  onVerify={handleVerify}
-                  emptyMessage="No diagnoses recorded"
-                />
-              )}
-            </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+              {/* Left Column - 2/3 width on lg */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <RecordCard
+                    title={config?.title || 'Records'}
+                    icon={config?.icon}
+                    records={sectionRecords}
+                    onVerify={handleVerify}
+                    emptyMessage={config?.emptyMessage}
+                    action={canAddRecord && (
+                      <Button variant="ghost" size="sm" onClick={handleAddRecord} leftIcon={<Plus className="w-4 h-4" />}>
+                        Add Record
+                      </Button>
+                    )}
+                  />
+                  {activeSection === 'diagnoses' && (
+                    <RecordCard
+                      title="Active Prescriptions & Dosage"
+                      icon={Pill}
+                      records={records.prescriptions}
+                      onVerify={handleVerify}
+                      emptyMessage="No active prescriptions"
+                    />
+                  )}
+                  {activeSection === 'prescriptions' && (
+                    <RecordCard
+                      title="Recent Diagnoses"
+                      icon={History}
+                      records={records.diagnoses}
+                      onVerify={handleVerify}
+                      emptyMessage="No diagnoses recorded"
+                    />
+                  )}
+                  {activeSection === 'lab-results' && (
+                    <RecordCard
+                      title="Recent Diagnoses"
+                      icon={History}
+                      records={records.diagnoses}
+                      onVerify={handleVerify}
+                      emptyMessage="No diagnoses recorded"
+                    />
+                  )}
+                </div>
 
-            <RecordCard
-              title="Latest Laboratory Results"
-              icon={Activity}
-              records={records.lab_results}
-              onVerify={handleVerify}
-              emptyMessage="No lab results available"
-            />
+                <RecordCard
+                  title="Latest Laboratory Results"
+                  icon={Activity}
+                  records={records.lab_results}
+                  onVerify={handleVerify}
+                  emptyMessage="No lab results available"
+                />
+              </div>
+
+              {/* Right Column - AI Widget */}
+              <div className="lg:col-span-1">
+                <AIWidget patientCode={patientCode} />
+              </div>
+            </div>
           </div>
         </div>
       </main>
