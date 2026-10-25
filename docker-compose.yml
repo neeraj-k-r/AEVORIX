@@ -53,6 +53,7 @@ services:
     container_name: aervorix-frontend
     environment:
       VITE_API_URL: http://localhost:3001/api
+      VITE_AI_URL: http://localhost:8000
     ports:
       - "5173:5173"
     depends_on:
@@ -62,5 +63,32 @@ services:
       - /app/node_modules
     command: npm run dev -- --host
 
+  # AI Service (RAG + XAI)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: aervorix-ai
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+      DEBUG: "true"
+      SUPABASE_URL: http://postgres:5432
+      SUPABASE_SERVICE_ROLE_KEY: local_dev_key
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3:8b
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./ai-service:/app
+      - ai_models:/app/models
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
 volumes:
   postgres_data:
+  ai_models:
