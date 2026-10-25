@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle, Loader2, Terminal, Zap } from 'lucide-react';
-import { Modal, Button, Badge } from '../components';
-import { useToast } from '../components/Toast';
+import { Modal, Button, Badge } from '../../components';
+import { useToast } from '../../components/Toast';
 import { useBlockchainApi } from '../../hooks/useApi';
 
 export default function TamperDemoModal({ isOpen, onClose, patientCode, userRole }) {
