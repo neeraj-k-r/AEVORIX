@@ -133,6 +133,225 @@ app.get('/api/auth/verify', authenticateToken, async (req, res) => {
   res.json({ user });
 });
 
+// Example Protected Routes with RBAC
+// Doctors can create diagnoses and prescriptions
+app.post('/api/diagnoses', authenticateToken, authorizeRoles('Doctor', 'Admin'), async (req, res) => {
+  const { patient_id, condition_name, diagnosed_date } = req.body;
+  
+  if (!patient_id || !condition_name || !diagnosed_date) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const recordData = {
+      patient_id,
+      condition_name,
+      diagnosed_date,
+      recorded_by: req.user.userId,
+    };
+
+    // Compute SHA-256 hash (in production, this would be done by DB trigger)
+    const crypto = require('crypto');
+    const sha256_hash = crypto.createHash('sha256').update(JSON.stringify(recordData)).digest('hex');
+
+    const { data, error } = await supabase
+      .from('diagnoses')
+      .insert({ ...recordData, sha256_hash })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Log access
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      patient_id,
+      action: 'CREATE_DIAGNOSIS',
+    });
+
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('Create diagnosis error:', err);
+    res.status(500).json({ error: 'Failed to create diagnosis' });
+  }
+});
+
+// Doctors can create prescriptions
+app.post('/api/prescriptions', authenticateToken, authorizeRoles('Doctor', 'Admin'), async (req, res) => {
+  const { patient_id, medication_name, dosage_instructions } = req.body;
+  
+  if (!patient_id || !medication_name || !dosage_instructions) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const recordData = {
+      patient_id,
+      medication_name,
+      dosage_instructions,
+      prescribed_by: req.user.userId,
+    };
+
+    const crypto = require('crypto');
+    const sha256_hash = crypto.createHash('sha256').update(JSON.stringify(recordData)).digest('hex');
+
+    const { data, error } = await supabase
+      .from('prescriptions')
+      .insert({ ...recordData, sha256_hash })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      patient_id,
+      action: 'CREATE_PRESCRIPTION',
+    });
+
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('Create prescription error:', err);
+    res.status(500).json({ error: 'Failed to create prescription' });
+  }
+});
+
+// Lab technicians can create lab results
+app.post('/api/lab-results', authenticateToken, authorizeRoles('Lab', 'Admin'), async (req, res) => {
+  const { patient_id, test_name, result_value, target_range } = req.body;
+  
+  if (!patient_id || !test_name || !result_value) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const recordData = {
+      patient_id,
+      test_name,
+      result_value,
+      target_range,
+      recorded_by: req.user.userId,
+    };
+
+    const crypto = require('crypto');
+    const sha256_hash = crypto.createHash('sha256').update(JSON.stringify(recordData)).digest('hex');
+
+    const { data, error } = await supabase
+      .from('lab_results')
+      .insert({ ...recordData, sha256_hash })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      patient_id,
+      action: 'CREATE_LAB_RESULT',
+    });
+
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('Create lab result error:', err);
+    res.status(500).json({ error: 'Failed to create lab result' });
+  }
+});
+
+// Pharmacists and Nurses can view prescriptions
+app.get('/api/patients/:patientCode/prescriptions', authenticateToken, authorizeRoles('Pharmacist', 'Nurse', 'Doctor', 'Admin'), async (req, res) => {
+  const { patientCode } = req.params;
+
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('id')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (!patient) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  const { data, error } = await supabase
+    .from('prescriptions')
+    .select('*, prescribed_by:users(full_name, role)')
+    .eq('patient_id', patient.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  await supabase.from('access_logs').insert({
+    user_id: req.user.userId,
+    role: req.user.role,
+    patient_id: patient.id,
+    action: 'VIEW_PRESCRIPTIONS',
+  });
+
+  res.json(data || []);
+});
+
+// Nurses and Doctors can view lab results
+app.get('/api/patients/:patientCode/lab-results', authenticateToken, authorizeRoles('Nurse', 'Doctor', 'Lab', 'Admin'), async (req, res) => {
+  const { patientCode } = req.params;
+
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('id')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (!patient) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  const { data, error } = await supabase
+    .from('lab_results')
+    .select('*, recorded_by:users(full_name, role)')
+    .eq('patient_id', patient.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  await supabase.from('access_logs').insert({
+    user_id: req.user.userId,
+    role: req.user.role,
+    patient_id: patient.id,
+    action: 'VIEW_LAB_RESULTS',
+  });
+
+  res.json(data || []);
+});
+
+// All authenticated users can view patient info
+app.get('/api/patients/:patientCode', authenticateToken, authorizeRoles('Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin'), async (req, res) => {
+  const { patientCode } = req.params;
+
+  const { data: patient, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (error) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  await supabase.from('access_logs').insert({
+    user_id: req.user.userId,
+    role: req.user.role,
+    patient_id: patient.id,
+    action: 'VIEW_PATIENT',
+  });
+
+  res.json(patient);
+});
+
 // Mock NFC/Biometric scan endpoints (for hardware integration later)
 app.post('/api/auth/nfc-scan', async (req, res) => {
   const { nfc_uid } = req.body;
