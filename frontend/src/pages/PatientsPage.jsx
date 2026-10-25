@@ -78,7 +78,7 @@ export default function PatientsPage() {
         </div>
 
         <div className="p-4">
-          <PatientList patients={filteredPatients} onSelect={(patient) => navigate(`/patients/${patient.patient_code}`)} />
+          <PatientList patients={filteredPatients} onSelect={(patient) => navigate(`/dashboard/patient/${patient.patient_code}`)} />
         </div>
       </div>
     </div>
