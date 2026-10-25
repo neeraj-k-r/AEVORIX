@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Local PostgreSQL (alternative to Supabase for local dev)
+  postgres:
+    image: postgres:16-alpine
+    container_name: aervorix-postgres
+    environment:
+      POSTGRES_DB: aervorix
+      POSTGRES_USER: aervorix
+      POSTGRES_PASSWORD: aervorix_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aervorix -d aervorix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aervorix-backend
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      FRONTEND_URL: http://localhost:5173
+      DATABASE_URL: postgresql://aervorix:aervorix_dev_password@postgres:5432/aervorix
+      SUPABASE_URL: http://postgres:5432
+      SUPABASE_SERVICE_ROLE_KEY: local_dev_key
+      JWT_SECRET: local_dev_jwt_secret_key_min_32_chars
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aervorix-frontend
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:
