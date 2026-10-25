@@ -12,8 +12,8 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAiApi } from '../../hooks/useApi';
-import { useToast } from '../components/Toast';
-import { Badge, Button, Card } from '../components';
+import { useToast } from '../../components/Toast';
+import { Badge, Button, Card } from '../../components';
 
 const QUICK_PROMPTS = [
   "What are the patient's current diagnoses?",

@@ -133,7 +133,7 @@ export function useAiApi() {
   // AI Service (Python FastAPI) calls
   const aiBaseUrl = import.meta.env.VITE_AI_URL || 'http://localhost:8000';
   
-  const aiQuery = useCallback(async (patientCode: string, query: string) => {
+  const aiQuery = useCallback(async (patientCode, query) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
     const token = localStorage.getItem('aevorix_token');
     const response = await fetch(`${aiBaseUrl}/api/ai/query`, {
@@ -148,7 +148,7 @@ export function useAiApi() {
     return response.json();
   }, [isAuthenticated]);
 
-  const aiQuickPrompts = useCallback(async (patientCode: string) => {
+  const aiQuickPrompts = useCallback(async (patientCode) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
     const token = localStorage.getItem('aevorix_token');
     const response = await fetch(`${aiBaseUrl}/api/ai/quick-prompts`, {
@@ -163,7 +163,7 @@ export function useAiApi() {
     return response.json();
   }, [isAuthenticated]);
 
-  const aiRiskAnalysis = useCallback(async (patientCode: string) => {
+  const aiRiskAnalysis = useCallback(async (patientCode) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
     const token = localStorage.getItem('aevorix_token');
     const response = await fetch(`${aiBaseUrl}/api/ai/xai-risk`, {
@@ -178,7 +178,7 @@ export function useAiApi() {
     return response.json();
   }, [isAuthenticated]);
 
-  const aiRiskContributions = useCallback(async (patientCode: string) => {
+  const aiRiskContributions = useCallback(async (patientCode) => {
     if (!isAuthenticated) throw new Error('Not authenticated');
     const token = localStorage.getItem('aevorix_token');
     const response = await fetch(`${aiBaseUrl}/api/ai/xai-risk/${patientCode}/contributions`, {
