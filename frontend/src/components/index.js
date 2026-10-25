@@ -22,3 +22,4 @@ export { default as BlockchainVerificationModal } from './BlockchainVerification
 export { default as PatientSidebar } from './dashboard/PatientSidebar';
 export { RecordCard as DashboardRecordCard, RecordRow } from './dashboard/RecordCard';
 export { default as AddRecordModal } from './dashboard/AddRecordModal';
+export { default as TamperDemoModal } from './dashboard/TamperDemoModal';
