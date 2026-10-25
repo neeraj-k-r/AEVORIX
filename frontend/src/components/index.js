@@ -16,3 +16,8 @@ export { ProtectedRoute, PublicRoute } from './ProtectedRoute';
 export { default as PatientCard, PatientList } from './PatientCard';
 export { RecordCard, RecordList } from './RecordCard';
 export { default as BlockchainVerificationModal } from './BlockchainVerificationModal';
+
+// Dashboard Components
+export { default as PatientSidebar } from './dashboard/PatientSidebar';
+export { RecordCard as DashboardRecordCard, RecordRow } from './dashboard/RecordCard';
+export { default as AddRecordModal } from './dashboard/AddRecordModal';
