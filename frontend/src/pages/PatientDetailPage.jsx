@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { usePatientsApi } from '../hooks/useApi';
+import { usePatientsApi, useBlockchainApi } from '../hooks/useApi';
 import { PatientCard } from '../components/PatientCard';
 import { RecordList } from '../components/RecordCard';
 import { PageLoader } from '../components/LoadingSpinner';
 import { useToast } from '../components/Toast';
+import BlockchainVerificationModal from '../components/BlockchainVerificationModal';
 
 export default function PatientDetailPage() {
   const { patientCode } = useParams();
   const navigate = useNavigate();
   const { getPatient, getPatientRecords, getPrescriptions, getLabResults } = usePatientsApi();
-  const { error: showError } = useToast();
+  const { verifyRecord } = useBlockchainApi();
+  const { error: showError, success: showSuccess } = useToast();
 
   const [patient, setPatient] = useState(null);
   const [records, setRecords] = useState({ diagnoses: [], prescriptions: [], lab_results: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [verifyModal, setVerifyModal] = useState({ isOpen: false, recordType: null, recordId: null });
+
+  const handleVerify = (recordType, recordId) => {
+    setVerifyModal({ isOpen: true, recordType, recordId });
+  };
+
+  const closeVerifyModal = () => {
+    setVerifyModal({ isOpen: false, recordType: null, recordId: null });
+  };
 
   useEffect(() => {
     loadPatientData();
@@ -205,7 +216,14 @@ function InfoCard({ icon, label, value, fullWidth }) {
   );
 }
 
+<BlockchainVerificationModal
+  isOpen={verifyModal.isOpen}
+  onClose={closeVerifyModal}
+  recordType={verifyModal.recordType}
+  recordId={verifyModal.recordId}
+/>
+
 function handleVerify(type, recordId) {
-  // TODO: Implement blockchain verification modal
+  // Fallback handler
   console.log('Verify:', type, recordId);
 }
