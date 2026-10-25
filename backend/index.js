@@ -3,7 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
+
+const { generateRecordHash, generateLedgerHash, verifyRecordIntegrity } = require('./utils/cryptoHash');
+const { createLedgerEntry, verifyPatientRecords, verifyChainIntegrity } = require('./services/blockchainService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -557,6 +561,255 @@ app.post('/api/ai/query', async (req, res) => {
     generated_at: new Date().toISOString()
   });
 });
+
+// Blockchain Verification Routes
+
+// Verify all records for a patient against blockchain ledger
+app.get('/api/patients/:patientCode/verify-records', authenticateToken, authorizeRoles('Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin'), async (req, res) => {
+  const { patientCode } = req.params;
+
+  try {
+    const verificationResults = await verifyPatientRecords(supabase, patientCode);
+    
+    const summary = {
+      total: verificationResults.length,
+      verified: verificationResults.filter(r => r.verified).length,
+      failed: verificationResults.filter(r => !r.verified).length,
+      tampered: verificationResults.filter(r => !r.verified && r.reason?.includes('tampering')).length,
+    };
+
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      action: 'VERIFY_RECORDS',
+    });
+
+    res.json({
+      patient_code: patientCode,
+      summary,
+      results: verificationResults,
+      verified_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Verification error:', err);
+    res.status(500).json({ error: 'Verification failed', details: err.message });
+  }
+});
+
+// Verify blockchain chain integrity
+app.get('/api/patients/:patientCode/verify-chain', authenticateToken, authorizeRoles('Doctor', 'Admin'), async (req, res) => {
+  try {
+    const chainResult = await verifyChainIntegrity(supabase);
+    
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      action: 'VERIFY_CHAIN',
+    });
+
+    res.json({
+      ...chainResult,
+      verified_at: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Chain verification error:', err);
+    res.status(500).json({ error: 'Chain verification failed', details: err.message });
+  }
+});
+
+// Verify single record
+app.get('/api/patients/:patientCode/verify/:recordType/:recordId', authenticateToken, authorizeRoles('Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin'), async (req, res) => {
+  const { patientCode, recordType, recordId } = req.params;
+
+  try {
+    const { data: record, error } = await supabase
+      .from(recordType === 'diagnosis' ? 'diagnoses' : recordType === 'prescription' ? 'prescriptions' : 'lab_results')
+      .select('*, recorded_by:users(full_name, role), prescribed_by:users(full_name, role)')
+      .eq('id', recordId)
+      .single();
+
+    if (error || !record) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    const ledgerEntry = await supabase
+      .from('blockchain_ledger')
+      .select('*')
+      .eq('record_type', recordType)
+      .eq('record_id', recordId)
+      .order('block_index', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!ledgerEntry.data) {
+      return res.json({
+        record_id: recordId,
+        record_type: recordType,
+        verified: false,
+        reason: 'No blockchain entry found',
+        computed_hash: generateRecordHash({
+          patient_code: patientCode,
+          record_type: recordType,
+          record_id: recordId,
+          date: record.diagnosed_date || record.created_at,
+          author_role: record.recorded_by?.role || record.prescribed_by?.role || 'Unknown',
+          content: buildRecordContent(recordType, record),
+        }),
+        stored_hash: null,
+      });
+    }
+
+    const recordPayload = {
+      patient_code: patientCode,
+      record_type: recordType,
+      record_id: recordId,
+      date: record.diagnosed_date || record.created_at,
+      author_role: record.recorded_by?.role || record.prescribed_by?.role || 'Unknown',
+      content: buildRecordContent(recordType, record),
+    };
+
+    const computed_hash = generateRecordHash(recordPayload);
+    const verified = computed_hash === ledgerEntry.data.data_hash;
+
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      action: 'VERIFY_SINGLE_RECORD',
+    });
+
+    res.json({
+      record_id: recordId,
+      record_type: recordType,
+      verified,
+      reason: verified ? 'Hash matches blockchain ledger' : 'Hash mismatch - potential tampering detected',
+      computed_hash,
+      stored_hash: ledgerEntry.data.data_hash,
+      block_index: ledgerEntry.data.block_index,
+      timestamp: ledgerEntry.data.timestamp,
+    });
+  } catch (err) {
+    console.error('Single record verification error:', err);
+    res.status(500).json({ error: 'Verification failed', details: err.message });
+  }
+});
+
+// DEMO: Simulate DB tamper attack - modifies a record without updating ledger
+app.post('/api/demo/simulate-tamper', authenticateToken, authorizeRoles('Admin'), async (req, res) => {
+  const { patient_code, record_type, record_id, field, new_value } = req.body;
+
+  if (!patient_code || !record_type || !record_id || !field || new_value === undefined) {
+    return res.status(400).json({ 
+      error: 'Missing required fields: patient_code, record_type, record_id, field, new_value' 
+    });
+  }
+
+  try {
+    // Get the current record
+    const tableName = record_type === 'diagnosis' ? 'diagnoses' : 
+                      record_type === 'prescription' ? 'prescriptions' : 'lab_results';
+    
+    const { data: currentRecord, error: fetchError } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('id', record_id)
+      .single();
+
+    if (fetchError || !currentRecord) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    // Store original value for response
+    const originalValue = currentRecord[field];
+
+    // Modify the record WITHOUT updating the blockchain ledger
+    const { error: updateError } = await supabase
+      .from(tableName)
+      .update({ [field]: new_value })
+      .eq('id', record_id);
+
+    if (updateError) {
+      return res.status(500).json({ error: 'Failed to modify record', details: updateError.message });
+    }
+
+    // Log the tamper action
+    await supabase.from('access_logs').insert({
+      user_id: req.user.userId,
+      role: req.user.role,
+      action: 'SIMULATE_TAMPER',
+      details: { record_type, record_id, field, original_value: originalValue, new_value },
+    });
+
+    // Now verify the tampered record
+    const ledgerEntry = await supabase
+      .from('blockchain_ledger')
+      .select('*')
+      .eq('record_type', record_type)
+      .eq('record_id', record_id)
+      .order('block_index', { ascending: false })
+      .limit(1)
+      .single();
+
+    let verificationResult = null;
+    if (ledgerEntry.data) {
+      const recordPayload = {
+        patient_code,
+        record_type,
+        record_id,
+        date: currentRecord.diagnosed_date || currentRecord.created_at,
+        author_role: currentRecord.recorded_by?.role || currentRecord.prescribed_by?.role || 'Unknown',
+        content: buildRecordContent(record_type, currentRecord),
+      };
+      const computed_hash = generateRecordHash(recordPayload);
+      verificationResult = {
+        verified: computed_hash === ledgerEntry.data.data_hash,
+        computed_hash,
+        stored_hash: ledgerEntry.data.data_hash,
+        tamper_detected: computed_hash !== ledgerEntry.data.data_hash,
+      };
+    }
+
+    res.json({
+      message: 'Record modified (tamper simulated)',
+      record_type,
+      record_id,
+      field_changed: field,
+      original_value: originalValue,
+      new_value: new_value,
+      verification: verificationResult,
+      warning: verificationResult?.tamper_detected 
+        ? '⚠ TAMPER DETECTED - Hash mismatch proves unauthorized modification!' 
+        : 'No tamper detected (unexpected)',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Tamper simulation error:', err);
+    res.status(500).json({ error: 'Tamper simulation failed', details: err.message });
+  }
+});
+
+// Helper function to build record content for hashing
+function buildRecordContent(recordType, record) {
+  switch (recordType) {
+    case 'diagnosis':
+      return {
+        condition_name: record.condition_name,
+        diagnosed_date: record.diagnosed_date,
+      };
+    case 'prescription':
+      return {
+        medication_name: record.medication_name,
+        dosage_instructions: record.dosage_instructions,
+      };
+    case 'lab_result':
+      return {
+        test_name: record.test_name,
+        result_value: record.result_value,
+        target_range: record.target_range,
+      };
+    default:
+      return {};
+  }
+}
 
 // Error handling
 app.use((err, req, res, next) => {
