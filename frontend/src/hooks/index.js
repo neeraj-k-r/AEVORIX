@@ -1,0 +1,1 @@
+export { useApi, usePatientsApi, useDiagnosesApi, usePrescriptionsApi, useLabResultsApi, useBlockchainApi, useAccessLogsApi, useAiApi } from './useApi';
