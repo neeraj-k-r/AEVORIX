@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, History, Pill, Activity, AlertTriangle, Clock } from 'lucide-react';
+import { Plus, History, Pill, Activity, AlertTriangle, Clock, Shield } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePatientsApi, useAccessLogsApi } from '../../hooks';
+import { usePatientsApi, useAccessLogsApi, useBlockchainApi } from '../../hooks';
 import { useAuth } from '../../contexts';
 import { PageLoader, useToast, PatientSidebar, RecordCard, AddRecordModal } from '../../components';
 import { dashboardMenuItems } from './menuItems';
+import TamperDemoModal from '../../components/dashboard/TamperDemoModal';
 
 const sectionConfig = {
   diagnoses: {
@@ -68,6 +69,7 @@ export default function DashboardPatientPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('diagnoses');
   const [addRecordModal, setAddRecordModal] = useState({ isOpen: false, recordType: null });
+  const [tamperDemoOpen, setTamperDemoOpen] = useState(false);
 
   useEffect(() => {
     loadPatientData();
@@ -206,6 +208,27 @@ export default function DashboardPatientPage() {
         </div>
       </main>
 
+      <footer className="bg-white border-t border-card-border sticky bottom-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 text-sm text-slate-500">
+              <Shield className="w-4 h-4 text-verification-text" />
+              <span>Blockchain Secured</span>
+              <span className="px-2 py-0.5 text-xs bg-verification-bg text-verification-text rounded-full">Verified</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setTamperDemoOpen(true)}
+              leftIcon={<Zap className="w-4 h-4" />}
+              className="text-alert-text hover:text-alert-text hover:bg-alert-bg"
+            >
+              ⚠ Simulate DB Tamper Attack
+            </Button>
+          </div>
+        </div>
+      </footer>
+
       <AddRecordModal
         isOpen={addRecordModal.isOpen}
         onClose={() => setAddRecordModal({ isOpen: false, recordType: null })}
@@ -213,6 +236,13 @@ export default function DashboardPatientPage() {
         patientId={patient.id}
         userRole={user?.role}
         onRecordAdded={handleRecordAdded}
+      />
+
+      <TamperDemoModal
+        isOpen={tamperDemoOpen}
+        onClose={() => setTamperDemoOpen(false)}
+        patientCode={patientCode}
+        userRole={user?.role}
       />
     </div>
   );
