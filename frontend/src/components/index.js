@@ -1,5 +1,6 @@
 // Layout Components
 export { default as Navbar } from './Navbar';
+export { default as ErrorBoundary } from './ErrorBoundary';
 
 // UI Components
 export { default as Button } from './Button';
