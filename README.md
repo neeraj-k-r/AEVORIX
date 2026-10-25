@@ -108,6 +108,30 @@ npm run dev:backend   # Backend only
 | pharma.shah@aevorix.com | Pharmacist |
 | admin@aevorix.com | Admin |
 
+## Features Implemented
+
+### Part 1: Foundation
+- Monorepo structure with frontend/backend workspaces
+- Database schema with 7 tables and RLS policies
+- PostgreSQL triggers for blockchain ledger
+- Seed data for test patient Rahul Sharma (AEV-2026-8941)
+
+### Part 2: Authentication & Navigation
+- Global Navbar with AEVORIX branding and ledger status
+- Gateway Authentication screen with role selector tabs
+- JWT authentication with RBAC middleware
+- Protected routes with role-based access control
+- Toast notifications, loading states, modals
+
+### Part 3: Patient Dashboard
+- **Two-column responsive layout** (Sidebar + Main Content Grid)
+- **Left Sidebar**: Patient info, vitals, allergies, vertical navigation
+- **Main Content**: 3 cards (Diagnoses, Prescriptions, Lab Results) with blockchain verified badges
+- **Role-based Add Record modals** for Doctors (Diagnoses/Prescriptions), Lab (Lab Results)
+- Sample data for Rahul Sharma with dates and verified badges
+
+See [Dashboard Documentation](docs/dashboard-patient-view.md) for details.
+
 ## API Endpoints
 
 ### Authentication (Mock Hardware)
