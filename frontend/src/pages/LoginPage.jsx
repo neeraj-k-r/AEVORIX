@@ -1,31 +1,31 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { roles, roleIcons, rolePlaceholders } from '../auth/roles';
+import { useToast } from '../components/Toast';
 
 export default function LoginPage({ onLogin }) {
+  const { error: showError } = useToast();
   const [selectedRole, setSelectedRole] = useState('Doctor');
   const [email, setEmail] = useState(rolePlaceholders.Doctor);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleRoleChange = (role) => {
     setSelectedRole(role);
     setEmail(rolePlaceholders[role] || '');
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
 
     try {
       await onLogin({ email, password, role: selectedRole, rememberMe });
+      showError('Welcome back!', 'success');
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      showError(err.message || 'Authentication failed', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -43,12 +43,6 @@ export default function LoginPage({ onLogin }) {
             </h1>
             <p className="mt-2 text-sm text-slate-600">Access your secure healthcare workspace</p>
           </div>
-
-          {error && (
-            <div className="mb-6 p-3 rounded-lg bg-alert-bg text-alert-text text-sm" role="alert">
-              {error}
-            </div>
-          )}
 
           <div className="mb-6" role="tablist" aria-label="Select your role">
             <div className="flex gap-2">
