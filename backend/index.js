@@ -1,0 +1,255 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
+  next();
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'AEVORIX Backend' });
+});
+
+// Mock NFC/Biometric scan endpoints (for hardware integration later)
+app.post('/api/auth/nfc-scan', async (req, res) => {
+  const { nfc_uid } = req.body;
+  
+  if (!nfc_uid) {
+    return res.status(400).json({ error: 'NFC UID required' });
+  }
+
+  // Mock: In production, this would read from hardware
+  const { data: patient, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('nfc_uid', nfc_uid)
+    .eq('nfc_status', 'Active')
+    .single();
+
+  if (error || !patient) {
+    return res.status(404).json({ error: 'Patient not found or NFC inactive' });
+  }
+
+  res.json({ patient, message: 'NFC scan successful' });
+});
+
+app.post('/api/auth/biometric-scan', async (req, res) => {
+  const { patient_code, biometric_hash } = req.body;
+  
+  // Mock: In production, this would verify fingerprint/biometric
+  const { data: patient, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('patient_code', patient_code)
+    .single();
+
+  if (error || !patient) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  // Mock biometric verification (always passes for demo)
+  res.json({ patient, verified: true, message: 'Biometric verification successful' });
+});
+
+// Patient routes
+app.get('/api/patients/:patientCode', async (req, res) => {
+  const { patientCode } = req.params;
+  
+  const { data: patient, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (error) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  res.json(patient);
+});
+
+app.get('/api/patients/:patientCode/records', async (req, res) => {
+  const { patientCode } = req.params;
+  
+  // Get patient ID first
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('id')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (!patient) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  // Fetch all records in parallel
+  const [diagnoses, prescriptions, labResults] = await Promise.all([
+    supabase.from('diagnoses').select('*, recorded_by:users(full_name, role)').eq('patient_id', patient.id).order('diagnosed_date', { ascending: false }),
+    supabase.from('prescriptions').select('*, prescribed_by:users(full_name, role)').eq('patient_id', patient.id).order('created_at', { ascending: false }),
+    supabase.from('lab_results').select('*, recorded_by:users(full_name, role)').eq('patient_id', patient.id).order('created_at', { ascending: false })
+  ]);
+
+  res.json({
+    diagnoses: diagnoses.data || [],
+    prescriptions: prescriptions.data || [],
+    lab_results: labResults.data || []
+  });
+});
+
+// Blockchain verification endpoint
+app.get('/api/blockchain/verify/:recordType/:recordId', async (req, res) => {
+  const { recordType, recordId } = req.params;
+  
+  const { data: ledgerEntry, error } = await supabase
+    .from('blockchain_ledger')
+    .select('*')
+    .eq('record_type', recordType)
+    .eq('record_id', recordId)
+    .single();
+
+  if (error || !ledgerEntry) {
+    return res.status(404).json({ error: 'Blockchain record not found' });
+  }
+
+  // Verify chain integrity
+  const { data: previousBlock } = await supabase
+    .from('blockchain_ledger')
+    .select('data_hash')
+    .eq('block_index', ledgerEntry.block_index - 1)
+    .single();
+
+  const isValid = !previousBlock || previousBlock.data_hash === ledgerEntry.previous_hash;
+
+  res.json({
+    ...ledgerEntry,
+    chain_valid: isValid,
+    verified_at: new Date().toISOString()
+  });
+});
+
+// Access logs
+app.get('/api/access-logs/:patientCode', async (req, res) => {
+  const { patientCode } = req.params;
+  
+  const { data: patient } = await supabase
+    .from('patients')
+    .select('id')
+    .eq('patient_code', patientCode)
+    .single();
+
+  if (!patient) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+
+  const { data: logs, error } = await supabase
+    .from('access_logs')
+    .select('*, user:users(full_name)')
+    .eq('patient_id', patient.id)
+    .order('timestamp', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+
+  res.json(logs || []);
+});
+
+// XAI Explainability endpoint (mock)
+app.post('/api/ai/explain', async (req, res) => {
+  const { record_type, record_id, question } = req.body;
+  
+  // Mock XAI response - in production, this would call an ML model
+  const explanations = {
+    diagnosis: `This diagnosis was made based on clinical presentation, lab results (HbA1c 7.2%, fasting glucose 145 mg/dL), and patient history. The AI model considered 15 features with highest weights on glucose levels and BMI.`,
+    prescription: `Metformin 500mg BID is first-line therapy for Type 2 Diabetes per ADA 2024 guidelines. Dosage adjusted for renal function (eGFR > 45). Alternative: GLP-1 agonist if HbA1c target not met in 3 months.`,
+    lab_result: `HbA1c of 7.2% indicates suboptimal glycemic control (target <7%). Trending up from 6.8% three months ago. Recommend medication intensification and dietary counseling.`
+  };
+
+  res.json({
+    explanation: explanations[record_type] || 'Explanation not available for this record type.',
+    confidence: 0.92,
+    factors: [
+      { feature: 'HbA1c', importance: 0.35, value: '7.2%' },
+      { feature: 'Fasting Glucose', importance: 0.28, value: '145 mg/dL' },
+      { feature: 'BMI', importance: 0.18, value: '29.4' },
+      { feature: 'Age', importance: 0.12, value: '52' },
+      { feature: 'Medication Adherence', importance: 0.07, value: 'Good' }
+    ],
+    generated_at: new Date().toISOString()
+  });
+});
+
+// RAG Medical Query endpoint (mock)
+app.post('/api/ai/query', async (req, res) => {
+  const { query, patient_code } = req.body;
+  
+  // Mock RAG response - in production, this would query vector DB + LLM
+  const mockResponses = {
+    'diabetes': `Based on Rahul Sharma's records: HbA1c 7.2% (target <7%), on Metformin 500mg BID. Consider adding GLP-1 agonist or SGLT2 inhibitor per ADA 2024 guidelines. Monitor renal function.`,
+    'medication': `Current medications: Metformin 500mg BID, Lisinopril 10mg daily, Cetirizine 10mg PRN. No drug interactions detected. Penicillin allergy noted - avoid beta-lactams.`,
+    'allergy': `Patient has documented allergies: Penicillin (anaphylaxis risk), Peanuts. All prescriptions screened for cross-reactivity. Cephalosporins use with caution (1-2% cross-reactivity).`,
+    'default': `I can help you query Rahul Sharma's medical records. Try asking about: diabetes management, current medications, allergies, lab trends, or treatment recommendations.`
+  };
+
+  const lowerQuery = query.toLowerCase();
+  let response = mockResponses.default;
+  
+  if (lowerQuery.includes('diabetes') || lowerQuery.includes('glucose') || lowerQuery.includes('hba1c')) {
+    response = mockResponses.diabetes;
+  } else if (lowerQuery.includes('medication') || lowerQuery.includes('drug') || lowerQuery.includes('prescription')) {
+    response = mockResponses.medication;
+  } else if (lowerQuery.includes('allergy') || lowerQuery.includes('penicillin') || lowerQuery.includes('peanut')) {
+    response = mockResponses.allergy;
+  }
+
+  res.json({
+    answer: response,
+    sources: [
+      { type: 'lab_result', reference: 'HbA1c 7.2% (2024-11-15)' },
+      { type: 'prescription', reference: 'Metformin 500mg BID' },
+      { type: 'diagnosis', reference: 'Type 2 Diabetes Mellitus (2024-01-15)' },
+      { type: 'allergy', reference: 'Penicillin, Peanuts' }
+    ],
+    confidence: 0.89,
+    generated_at: new Date().toISOString()
+  });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+app.listen(PORT, () => {
+  console.log(`AEVORIX Backend running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+});
+
+module.exports = app;
