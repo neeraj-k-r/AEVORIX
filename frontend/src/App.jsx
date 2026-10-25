@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import PatientsPage from './pages/PatientsPage';
 import PatientDetailPage from './pages/PatientDetailPage';
+import { DashboardPatientPage } from './pages/dashboard';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -52,6 +53,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin']}>
             <PatientDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/patient/:patientCode"
+        element={
+          <ProtectedRoute allowedRoles={['Doctor', 'Nurse', 'Lab', 'Pharmacist', 'Admin']}>
+            <DashboardPatientPage />
           </ProtectedRoute>
         }
       />
