@@ -82,13 +82,29 @@ export function useLabResultsApi() {
 }
 
 export function useBlockchainApi() {
-  const { get } = useApi();
+  const { get, post } = useApi();
 
   const verifyRecord = useCallback(async (recordType, recordId) => {
     return get(`/blockchain/verify/${recordType}/${recordId}`);
   }, [get]);
 
-  return { verifyRecord };
+  const verifyPatientRecords = useCallback(async (patientCode) => {
+    return get(`/patients/${patientCode}/verify-records`);
+  }, [get]);
+
+  const verifyChain = useCallback(async (patientCode) => {
+    return get(`/patients/${patientCode}/verify-chain`);
+  }, [get]);
+
+  const verifySingleRecord = useCallback(async (patientCode, recordType, recordId) => {
+    return get(`/patients/${patientCode}/verify/${recordType}/${recordId}`);
+  }, [get]);
+
+  const simulateTamper = useCallback(async (data) => {
+    return post('/demo/simulate-tamper', data);
+  }, [post]);
+
+  return { verifyRecord, verifyPatientRecords, verifyChain, verifySingleRecord, simulateTamper };
 }
 
 export function useAccessLogsApi() {
